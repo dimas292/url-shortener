@@ -34,7 +34,10 @@ func (m *UrlModule) JWTService() *pkgauth.JWTService {
 
 func (m *UrlModule) RegisterRoutes(rg *gin.RouterGroup) {
 	urls := rg.Group("/url")
-
+	urls.Use(pkgauth.AuthMiddleware(m.JWTService()))
+	urls.GET("/:shortUrl", m.Redirect)
+	urls.POST("/shorten", m.Shorten)
+	
 	// Generic CRUD — skip GET /:id so we can use custom Redirect handler
 	repo := repository.NewBaseRepository[Url, *Url](m.service.db)
 	svc := service.NewBaseService[Url, *Url](repo)
@@ -42,15 +45,6 @@ func (m *UrlModule) RegisterRoutes(rg *gin.RouterGroup) {
 	hndl.RegisterCRUD(urls, handler.WithExclude(handler.RouteFindByID))
 
 	// Custom GET /:id → Redirect by short URL
-	urls.GET("/:id", m.Redirect)
-
-	{
-		protected := urls.Group("")
-		protected.Use(pkgauth.AuthMiddleware(m.JWTService()))
-		{
-			protected.POST("/shorten", m.Shorten)
-		}
-	}
 }
 
 func (m *UrlModule) Shorten(c *gin.Context) {

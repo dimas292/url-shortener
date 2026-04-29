@@ -4,7 +4,10 @@ import (
 	"net/http"
 
 	pkgauth "github.com/dimas292/url_shortener/pkg/auth"
+	"github.com/dimas292/url_shortener/pkg/handler"
+	"github.com/dimas292/url_shortener/pkg/repository"
 	"github.com/dimas292/url_shortener/pkg/response"
+	"github.com/dimas292/url_shortener/pkg/service"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
@@ -31,14 +34,23 @@ func (m *UrlModule) JWTService() *pkgauth.JWTService {
 
 func (m *UrlModule) RegisterRoutes(rg *gin.RouterGroup) {
 	urls := rg.Group("/url")
-	protected := urls.Group("")
-	protected.Use(pkgauth.AuthMiddleware(m.JWTService()))
+
+	// Generic CRUD — skip GET /:id so we can use custom Redirect handler
+	repo := repository.NewBaseRepository[Url, *Url](m.service.db)
+	svc := service.NewBaseService[Url, *Url](repo)
+	hndl := handler.NewBaseHandler(svc)
+	hndl.RegisterCRUD(urls, handler.WithExclude(handler.RouteFindByID))
+
+	// Custom GET /:id → Redirect by short URL
+	urls.GET("/:id", m.Redirect)
+
 	{
-		protected.GET("/", m.FindAll)
-		protected.POST("/shorten", m.Shorten)
-		protected.GET("/:shortUrl", m.Redirect)
+		protected := urls.Group("")
+		protected.Use(pkgauth.AuthMiddleware(m.JWTService()))
+		{
+			protected.POST("/shorten", m.Shorten)
+		}
 	}
-	
 }
 
 func (m *UrlModule) Shorten(c *gin.Context) {
@@ -65,14 +77,5 @@ func (m *UrlModule) Redirect(c *gin.Context) {
 		return
 	}
 	c.Redirect(http.StatusPermanentRedirect, result.OriginalUrl)
-}
-
-func (m *UrlModule) FindAll(c *gin.Context) {
-	result, err := m.service.FindAll()
-	if err != nil {
-		response.Error(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-	response.Success(c, "URLs retrieved successfully", result)
 }
 	

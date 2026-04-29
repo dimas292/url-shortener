@@ -121,17 +121,67 @@ func (h *BaseHandler[T, PT]) Delete(c *gin.Context) {
 	response.Success(c, "deleted successfully", nil)
 }
 
-// RegisterCRUD registers all 5 CRUD routes on the given router group.
+// Route identifies a specific CRUD route that can be excluded.
+type Route int
+
+const (
+	RouteCreate   Route = iota // POST   /
+	RouteFindAll               // GET    /
+	RouteFindByID              // GET    /:id
+	RouteUpdate                // PUT    /:id
+	RouteDelete                // DELETE /:id
+)
+
+// CRUDOptions holds configuration for RegisterCRUD.
+type CRUDOptions struct {
+	Exclude map[Route]bool
+}
+
+// CRUDOption is a functional option for RegisterCRUD.
+type CRUDOption func(*CRUDOptions)
+
+// WithExclude returns an option that excludes the specified routes
+// from being registered, so you can provide your own custom handler.
+//
+// Example:
+//
+//	hndl.RegisterCRUD(rg, handler.WithExclude(handler.RouteFindByID))
+//	rg.GET("/:id", myCustomHandler)
+func WithExclude(routes ...Route) CRUDOption {
+	return func(o *CRUDOptions) {
+		for _, r := range routes {
+			o.Exclude[r] = true
+		}
+	}
+}
+
+// RegisterCRUD registers CRUD routes on the given router group.
+// Use WithExclude to skip specific routes you want to override.
 //
 //	POST   /          → Create
 //	GET    /          → FindAll (paginated)
 //	GET    /:id       → FindByID
 //	PUT    /:id       → Update
 //	DELETE /:id       → Delete
-func (h *BaseHandler[T, PT]) RegisterCRUD(rg *gin.RouterGroup) {
-	rg.POST("", h.Create)
-	rg.GET("", h.FindAll)
-	rg.GET("/:id", h.FindByID)
-	rg.PUT("/:id", h.Update)
-	rg.DELETE("/:id", h.Delete)
+func (h *BaseHandler[T, PT]) RegisterCRUD(rg *gin.RouterGroup, opts ...CRUDOption) {
+	o := &CRUDOptions{Exclude: make(map[Route]bool)}
+	for _, fn := range opts {
+		fn(o)
+	}
+
+	if !o.Exclude[RouteCreate] {
+		rg.POST("", h.Create)
+	}
+	if !o.Exclude[RouteFindAll] {
+		rg.GET("", h.FindAll)
+	}
+	if !o.Exclude[RouteFindByID] {
+		rg.GET("/:id", h.FindByID)
+	}
+	if !o.Exclude[RouteUpdate] {
+		rg.PUT("/:id", h.Update)
+	}
+	if !o.Exclude[RouteDelete] {
+		rg.DELETE("/:id", h.Delete)
+	}
 }

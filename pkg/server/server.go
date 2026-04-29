@@ -9,6 +9,7 @@ import (
 	"github.com/dimas292/url_shortener/pkg/config"
 	"github.com/dimas292/url_shortener/pkg/database"
 	"github.com/dimas292/url_shortener/pkg/router"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
@@ -51,6 +52,15 @@ func New(configPath string) *Server {
 
 	// Gin engine
 	r := gin.Default()
+
+	// CORS middleware
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     cfg.App.Cors.AllowedOrigins,
+		AllowMethods:     cfg.App.Cors.AllowedMethods,
+		AllowHeaders:     cfg.App.Cors.AllowedHeaders,
+		AllowCredentials: cfg.App.Cors.AllowCredentials,
+	}))
+	fmt.Println("cors initialized")
 
 	srv := &Server{
 		Config: cfg,

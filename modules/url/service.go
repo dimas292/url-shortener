@@ -62,6 +62,21 @@ func (s *UrlService) Redirect(shortUrl string) (*UrlResponse, error) {
 	}, nil
 }
 
+func(s *UrlService) FindAll() ([]UrlResponse, error) {
+	var urls []Url
+	if err := s.db.Find(&urls).Error; err != nil {
+		return nil, err
+	}
+	var responses []UrlResponse
+	for _, url := range urls {
+		responses = append(responses, UrlResponse{
+			ShortUrl: url.ShortUrl,
+			OriginalUrl: url.OriginalUrl,
+		})
+	}
+	return responses, nil
+}
+
 func (s *UrlService) GenerateShortUrl() string {
 	characters := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	var shortUrl string

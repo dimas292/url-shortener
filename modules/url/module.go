@@ -28,18 +28,18 @@ func (m *UrlModule) JWTService() *pkgauth.JWTService {
 }
 
 
+
 func (m *UrlModule) RegisterRoutes(rg *gin.RouterGroup) {
 	urls := rg.Group("/url")
-	{	
-		protected := urls.Group("")
-		protected.Use(pkgauth.AuthMiddleware(m.JWTService()))
-		{
-			protected.POST("/shorten", m.Shorten)
-		}
-		urls.GET("/:shortUrl", m.Redirect)
+	protected := urls.Group("")
+	protected.Use(pkgauth.AuthMiddleware(m.JWTService()))
+	{
+		protected.GET("/", m.FindAll)
+		protected.POST("/shorten", m.Shorten)
+		protected.GET("/:shortUrl", m.Redirect)
 	}
+	
 }
-
 
 func (m *UrlModule) Shorten(c *gin.Context) {
 	var url UrlRequest
@@ -65,5 +65,14 @@ func (m *UrlModule) Redirect(c *gin.Context) {
 		return
 	}
 	c.Redirect(http.StatusPermanentRedirect, result.OriginalUrl)
+}
+
+func (m *UrlModule) FindAll(c *gin.Context) {
+	result, err := m.service.FindAll()
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	response.Success(c, "URLs retrieved successfully", result)
 }
 	

@@ -12,10 +12,18 @@ type Config struct {
 }
 
 type AppConfig struct {
-	Name string    `yaml:"name"`
-	Port string    `yaml:"port"`
-	Jwt  JWTConfig `yaml:"jwt"`
-	Db   DbConfig  `yaml:"db"`
+	Name string     `yaml:"name"`
+	Port string     `yaml:"port"`
+	Jwt  JWTConfig  `yaml:"jwt"`
+	Db   DbConfig   `yaml:"db"`
+	Cors CorsConfig `yaml:"cors"`
+}
+
+type CorsConfig struct {
+	AllowedOrigins []string `yaml:"allowed_origins"`
+	AllowedMethods []string `yaml:"allowed_methods"`
+	AllowedHeaders []string `yaml:"allowed_headers"`
+	AllowCredentials bool    `yaml:"allow_credentials"`
 }
 
 type JWTConfig struct {

@@ -2,6 +2,7 @@ package main
 
 import (
 	authmodule "github.com/dimas292/url_shortener/modules/auth"
+	urlmodule "github.com/dimas292/url_shortener/modules/url"
 	"github.com/dimas292/url_shortener/pkg/server"
 )
 
@@ -11,6 +12,7 @@ func main() {
 
 	// Register feature modules
 	srv.RegisterModules(
+		urlmodule.NewUrlModule(srv.DB, srv.Redis, srv.JWT),
 		authmodule.NewAuthModule(srv.DB, srv.Redis, srv.JWT),
 		// yourmodule.NewYourModule(srv.DB),
 	)

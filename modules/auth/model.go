@@ -49,3 +49,7 @@ func (u *User) ToResponse() UserResponse {
 		Role:  u.Role,
 	}
 }
+
+func (u *User) TableName() string {
+	return "t_users"
+}
